@@ -51,8 +51,13 @@ export function AppSidebar() {
               <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={pathname === '/'}>
                   <a href="/">
-                    <span>🏠</span>
-                    <span className={cn(pathname === '/' && 'font-semibold')}>
+                    <span className="text-lg">🏠</span>
+                    <span
+                      className={cn(
+                        'text-xs text-muted-foreground',
+                        pathname === '/' && 'font-semibold text-primary'
+                      )}
+                    >
                       Home
                     </span>
                   </a>
@@ -62,14 +67,17 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
         <SidebarGroup>
-          <SidebarGroupLabel>Rooms</SidebarGroupLabel>
+          <SidebarGroupLabel>Topics</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <a href={item.url}>
-                      <span>{item.emoji}</span>
+                    <a
+                      href={item.url}
+                      className="text-xs text-muted-foreground"
+                    >
+                      <span className="text-lg">{item.emoji}</span>
                       <span>{item.title}</span>
                     </a>
                   </SidebarMenuButton>

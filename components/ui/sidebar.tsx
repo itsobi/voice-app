@@ -258,7 +258,7 @@ function SidebarTrigger({
   onClick,
   ...props
 }: React.ComponentProps<typeof Button>) {
-  const { toggleSidebar, open } = useSidebar();
+  const { toggleSidebar, open, isMobile } = useSidebar();
 
   return (
     <Button
@@ -266,18 +266,14 @@ function SidebarTrigger({
       data-slot="sidebar-trigger"
       variant="ghost"
       size="icon"
-      className={cn('size-7 cursor-pointer p-4', className)}
+      className={cn('size-7 p-4', className)}
       onClick={(event) => {
         onClick?.(event);
         toggleSidebar();
       }}
       {...props}
     >
-      {open ? (
-        <span className="text-xl">👈</span>
-      ) : (
-        <span className="text-xl">👉</span>
-      )}
+      {isMobile && <span className="text-xl">👉</span>}
       <span className="sr-only">Toggle Sidebar</span>
     </Button>
   );
