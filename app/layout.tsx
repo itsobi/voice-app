@@ -1,14 +1,10 @@
 import type { Metadata } from 'next';
-import { Lato } from 'next/font/google';
 import localFont from 'next/font/local';
 import './globals.css';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/app-sidebar';
-
-const lato = Lato({
-  subsets: ['latin'],
-  weight: ['400', '700'],
-});
+import { Header } from '@/components/header';
+import { VoiceRecordDialog } from '@/components/voice-record-dialog';
 
 const ranadeFont = localFont({
   src: [
@@ -44,12 +40,16 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${ranadeFont.className}`}>
+      <body className={`${ranadeFont.className} bg-[#f9fafb]`}>
         <SidebarProvider>
           <AppSidebar />
-          <main className="w-full h-full">
-            <div className="max-w-6xl mx-auto px-2 xl:px-0">
-              <SidebarTrigger />
+          <main className="w-screen h-screen">
+            <div className="px-4">
+              <div className="flex items-center justify-between py-2">
+                <SidebarTrigger />
+                <Header />
+                <VoiceRecordDialog />
+              </div>
               {children}
             </div>
           </main>
