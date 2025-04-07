@@ -8,34 +8,49 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+
 import { useVoiceDialogStore } from '@/lib/store';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useTransition } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from './ui/button';
+import { useMutation } from 'convex/react';
+import { api } from '@/convex/_generated/api';
+import { Hand, Mic, Pause, Play, Trash } from 'lucide-react';
+import { useUser } from '@clerk/nextjs';
+import { toast } from 'sonner';
+
+type Topic = 'twenty-somethings' | 'technology' | 'sports' | 'politics';
 
 export function VoiceRecordDialog() {
   const { isOpen, close } = useVoiceDialogStore();
+  const { user } = useUser();
   const [isRecording, setIsRecording] = useState(false);
   const [audioURL, setAudioURL] = useState<string | null>(null);
   const [recordingTime, setRecordingTime] = useState(0);
-  const [playbackTime, setPlaybackTime] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const [topic, setTopic] = useState<Topic | ''>('');
+  const [isPending, startTransition] = useTransition();
+
+  const generateUploadUrl = useMutation(api.voiceNotes.generateUploadUrl);
+  const sendVoiceNote = useMutation(api.voiceNotes.sendVoiceNote);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const playbackTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     return () => {
       if (timerRef.current) {
         clearInterval(timerRef.current); // clear the interval when the component unmounts
-      }
-
-      if (playbackTimerRef.current) {
-        clearInterval(playbackTimerRef.current);
       }
 
       if (audioURL) {
@@ -49,6 +64,7 @@ export function VoiceRecordDialog() {
   useEffect(() => {
     if (!isOpen) {
       clearRecording();
+      setTopic('');
     }
   }, [isOpen]);
 
@@ -68,8 +84,9 @@ export function VoiceRecordDialog() {
       mediaRecorder.onstop = () => {
         if (isOpen) {
           const audioBlob = new Blob(audioChunksRef.current, {
-            type: 'audio/wav',
+            type: 'audio/mp3',
           });
+          console.log(audioBlob);
           const url = URL.createObjectURL(audioBlob);
           setAudioURL(url);
 
@@ -157,7 +174,6 @@ export function VoiceRecordDialog() {
 
     setIsRecording(false);
     setIsPaused(false);
-    setPlaybackTime(recordingTime); // Changed from 5 to recordingTime
 
     if (timerRef.current) {
       clearInterval(timerRef.current);
@@ -175,45 +191,6 @@ export function VoiceRecordDialog() {
     }
   };
 
-  const playRecording = () => {
-    if (audioRef.current && audioURL) {
-      if (isPlaying) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-        setIsPlaying(false);
-        setPlaybackTime(recordingTime); // Reset playback time correctly
-        if (playbackTimerRef.current) {
-          clearInterval(playbackTimerRef.current);
-          playbackTimerRef.current = null;
-        }
-      } else {
-        audioRef.current.play();
-        setIsPlaying(true);
-        setPlaybackTime(recordingTime); // Ensure the playback timer starts fresh
-
-        playbackTimerRef.current = setInterval(() => {
-          setPlaybackTime((prevTime) => {
-            if (prevTime <= 1) {
-              clearInterval(playbackTimerRef.current!);
-              setIsPlaying(false);
-              return recordingTime; // Reset time after finishing
-            }
-            return prevTime - 1;
-          });
-        }, 1000);
-
-        audioRef.current.onended = () => {
-          setIsPlaying(false);
-          setPlaybackTime(recordingTime); // Reset to full duration
-          if (playbackTimerRef.current) {
-            clearInterval(playbackTimerRef.current);
-            playbackTimerRef.current = null;
-          }
-        };
-      }
-    }
-  };
-
   const clearRecording = () => {
     if (audioRef.current) {
       audioRef.current.pause();
@@ -226,10 +203,7 @@ export function VoiceRecordDialog() {
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
-    if (playbackTimerRef.current) {
-      clearInterval(playbackTimerRef.current);
-      playbackTimerRef.current = null;
-    }
+
     if (mediaRecorderRef.current?.stream) {
       mediaRecorderRef.current.stream
         .getTracks()
@@ -242,8 +216,6 @@ export function VoiceRecordDialog() {
 
     setAudioURL(null);
     setRecordingTime(0);
-    setPlaybackTime(0);
-    setIsPlaying(false);
     setIsRecording(false);
     setIsPaused(false);
   };
@@ -255,6 +227,35 @@ export function VoiceRecordDialog() {
     return `${minutes.toString().padStart(2, '0')}:${remainingSeconds
       .toString()
       .padStart(2, '0')}`;
+  };
+
+  const handleVoiceNoteUpload = async () => {
+    startTransition(async () => {
+      if (!user || !topic) return;
+      console.log('UPLOADING...');
+      const voiceNoteUrl = await generateUploadUrl();
+      const audioBlob = new Blob(audioChunksRef.current, {
+        type: 'audio/mp3',
+      });
+      const result = await fetch(voiceNoteUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'audio/mp3' },
+        body: audioBlob,
+      });
+      const { storageId } = await result.json();
+      const { success, message } = await sendVoiceNote({
+        clerkId: user.id,
+        username: user.username || '',
+        storageId,
+        topic: topic,
+      });
+      if (success) {
+        toast.success(message);
+        close();
+      } else {
+        toast.error(message);
+      }
+    });
   };
 
   return (
@@ -271,42 +272,71 @@ export function VoiceRecordDialog() {
         <DialogHeader className="text-left">
           <DialogTitle className="text-left">Voice Record</DialogTitle>
           <DialogDescription>
-            Click the microphone to start recording. You have 30 seconds to
-            record your note.
+            Select a topic and press the microphone to start recording. You have
+            30 seconds to record your note.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-col items-center justify-center gap-4">
+        <div className="mb-4 w-full">
+          <label
+            htmlFor="room-select"
+            className="block text-sm font-medium mb-2"
+          >
+            Select Topic
+          </label>
+          <Select
+            value={topic}
+            onValueChange={(value) => setTopic(value as Topic)}
+          >
+            <SelectTrigger id="room-select" className="w-full">
+              <SelectValue placeholder="Select the topic" />
+            </SelectTrigger>
+            <SelectContent className="text-xs">
+              <SelectItem value="twenty-somethings">
+                Twenty-somethings
+              </SelectItem>
+              <SelectItem value="technology">Technology</SelectItem>
+              <SelectItem value="sports">Sports</SelectItem>
+              <SelectItem value="politics">Politics</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex flex-col justify-center gap-4">
           {/* Timer */}
-          <div className="flex items-center gap-2">
-            <span
-              className={cn(
-                'text-lg font-thin',
-                isRecording && recordingTime > 19
-                  ? 'text-red-500 animate-pulse'
-                  : isRecording && recordingTime > 14
-                  ? 'text-yellow-400 animate-pulse'
-                  : isRecording && 'text-primary animate-pulse'
-              )}
-            >
-              {formatTime(isPlaying ? playbackTime : recordingTime)}
-            </span>
+
+          <div className="flex justify-center items-center gap-2">
+            {!audioURL && (
+              <span
+                className={cn(
+                  'text-lg font-thin',
+                  isRecording && recordingTime > 19
+                    ? 'text-red-500 animate-pulse'
+                    : isRecording && recordingTime > 14
+                      ? 'text-yellow-400 animate-pulse'
+                      : isRecording && 'text-primary animate-pulse'
+                )}
+              >
+                {formatTime(recordingTime)}
+              </span>
+            )}
+
             {isRecording && (
               <div className="h-3 w-3 rounded-full bg-red-500 animate-pulse" />
             )}
           </div>
 
           {/* Controls */}
-          <div className="flex items-center justify-center gap-4">
+          <div>
             {!audioURL ? (
-              <>
+              <div className="flex items-center justify-center gap-4">
                 {!isRecording && !isPaused ? (
                   <Button
                     variant={'ghost'}
                     onClick={startRecording}
                     className="h-14 w-14 rounded-full bg-red-500 hover:bg-red-500/70 text-xl"
                   >
-                    <span className="text-xl">🎙️</span>
+                    <Mic className="text-white" />
                   </Button>
                 ) : (
                   <>
@@ -316,7 +346,7 @@ export function VoiceRecordDialog() {
                       onClick={stopRecording}
                       className="h-14 w-14 rounded-full"
                     >
-                      <span className="text-xl">🛑</span>
+                      <Hand className="text-red-500" />
                     </Button>
                     <Button
                       variant={'outline'}
@@ -324,30 +354,38 @@ export function VoiceRecordDialog() {
                       onClick={isPaused ? resumeRecording : pauseRecording}
                       className="h-14 w-14 rounded-full"
                     >
-                      <span className="text-xl">{isPaused ? '▶️' : '⏸️'}</span>
+                      <span className="text-xl">
+                        {isPaused ? <Play /> : <Pause />}
+                      </span>
                     </Button>
                   </>
                 )}
-              </>
+              </div>
             ) : (
-              <>
+              <div className="flex flex-col items-center gap-4 w-full">
+                <div className="flex items-center gap-4 mb-6">
+                  <audio src={audioURL} controls />
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-14 w-14 rounded-full"
+                    onClick={clearRecording}
+                  >
+                    <Trash className="text-red-500" />
+                  </Button>
+                </div>
                 <Button
-                  variant="outline"
-                  size={'icon'}
-                  className="h-12 w-12 rounded-full"
-                  onClick={playRecording}
+                  onClick={handleVoiceNoteUpload}
+                  disabled={!audioURL || !topic}
+                  className="w-full"
                 >
-                  <span className="text-xl">👂</span>
+                  {isPending ? (
+                    <span className="animate-pulse">Uploading...</span>
+                  ) : (
+                    'Upload'
+                  )}
                 </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-12 w-12 rounded-full"
-                  onClick={clearRecording}
-                >
-                  <span className="text-xl">🗑️</span>
-                </Button>
-              </>
+              </div>
             )}
           </div>
         </div>

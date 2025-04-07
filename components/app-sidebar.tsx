@@ -12,13 +12,25 @@ import {
   SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
+import { ChevronUp } from 'lucide-react';
+import { User2 } from 'lucide-react';
+import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from './ui/dropdown-menu';
+import { SignedIn, useUser } from '@clerk/nextjs';
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 const items = [
   {
     title: 'Twenty-somethings',
-    url: '#',
+    url: '/twenty-somethings',
     emoji: '👨‍🎓',
   },
   {
@@ -40,7 +52,8 @@ const items = [
 
 export function AppSidebar() {
   const pathname = usePathname();
-
+  const { isMobile, toggleSidebar } = useSidebar();
+  const user = useUser();
   return (
     <Sidebar>
       <SidebarHeader />
@@ -50,7 +63,10 @@ export function AppSidebar() {
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={pathname === '/'}>
-                  <a href="/">
+                  <Link
+                    href={'/'}
+                    onClick={isMobile ? toggleSidebar : undefined}
+                  >
                     <span className="text-lg">🏠</span>
                     <span
                       className={cn(
@@ -60,7 +76,7 @@ export function AppSidebar() {
                     >
                       Home
                     </span>
-                  </a>
+                  </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
@@ -72,14 +88,22 @@ export function AppSidebar() {
             <SidebarMenu>
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <a
-                      href={item.url}
-                      className="text-xs text-muted-foreground"
+                  <SidebarMenuButton asChild isActive={pathname === item.url}>
+                    <Link
+                      href={'/twenty-somethings'}
+                      onClick={isMobile ? toggleSidebar : undefined}
                     >
                       <span className="text-lg">{item.emoji}</span>
-                      <span>{item.title}</span>
-                    </a>
+                      <span
+                        className={cn(
+                          'text-xs text-muted-foreground',
+                          pathname === `${item.url}` &&
+                            'font-semibold text-black'
+                        )}
+                      >
+                        {item.title}
+                      </span>
+                    </Link>
                   </SidebarMenuButton>
                   <SidebarMenuBadge>24</SidebarMenuBadge>
                 </SidebarMenuItem>
@@ -88,18 +112,54 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="text-center">
-        <p className="text-xs text-muted-foreground">
-          Brought to you by{' '}
-          <a
-            href="https://www.justobii.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:underline text-blue-500"
-          >
-            justobii.com
-          </a>
-        </p>
+      <SidebarFooter>
+        <SignedIn>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild className="mb-8">
+                  <SidebarMenuButton>
+                    <Avatar>
+                      <AvatarImage src={user?.user?.imageUrl} />
+                      <AvatarFallback>
+                        {user.user?.firstName?.[0]}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex flex-col">
+                      <span className="text-xs">@{user?.user?.username}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {user?.user?.emailAddresses[0].emailAddress}
+                      </span>
+                    </div>
+                    <ChevronUp className="ml-auto" />
+                  </SidebarMenuButton>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-[--radix-popper-anchor-width]">
+                  <DropdownMenuItem className="cursor-pointer">
+                    <span>💪 Upgrade to Pro</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="cursor-pointer">
+                    <span>👋 Sign out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SignedIn>
+
+        <div className="text-center text-xs font-extralight">
+          <p className="text-muted-foreground">
+            Brought to you by{' '}
+            <a
+              href="https://www.justobii.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:underline text-blue-500"
+            >
+              justobii.com
+            </a>
+          </p>
+        </div>
       </SidebarFooter>
     </Sidebar>
   );

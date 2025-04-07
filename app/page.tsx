@@ -1,9 +1,9 @@
-import { SidebarTrigger } from '@/components/ui/sidebar';
+import { PageHeader } from '@/components/page-header';
 
 export default function Home() {
   return (
     <div>
-      <h1 className="">Hello World</h1>
+      <PageHeader header="🏠 Home" />
     </div>
   );
 }

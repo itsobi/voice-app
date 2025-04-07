@@ -1,10 +1,14 @@
 import type { Metadata } from 'next';
 import localFont from 'next/font/local';
 import './globals.css';
-import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
+import { SidebarProvider } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/app-sidebar';
 import { Header } from '@/components/header';
 import { VoiceRecordDialog } from '@/components/voice-record-dialog';
+
+import { ClerkProvider } from '@clerk/nextjs';
+import { ConvexClientProvider } from '@/components/convex-client-provider';
+import { Toaster } from 'sonner';
 
 const ranadeFont = localFont({
   src: [
@@ -39,22 +43,23 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${ranadeFont.className} bg-[#f9fafb]`}>
-        <SidebarProvider>
-          <AppSidebar />
-          <main className="w-screen h-screen">
-            <div className="px-4">
-              <div className="flex items-center justify-between py-2">
-                <SidebarTrigger />
-                <Header />
+    <ClerkProvider>
+      <html lang="en">
+        <body className={`bg-[#f9fafb]`}>
+          <SidebarProvider>
+            <AppSidebar />
+            <main className="w-screen h-screen">
+              <Header />
+              <div className="border-b shadow-sm mb-2" />
+              <ConvexClientProvider>
+                <div className="px-4">{children}</div>
                 <VoiceRecordDialog />
-              </div>
-              {children}
-            </div>
-          </main>
-        </SidebarProvider>
-      </body>
-    </html>
+              </ConvexClientProvider>
+            </main>
+          </SidebarProvider>
+          <Toaster richColors />
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }
