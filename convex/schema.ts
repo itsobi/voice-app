@@ -18,9 +18,7 @@ export default defineSchema({
       v.literal('sports'),
       v.literal('politics')
     ),
-    username: v.string(),
-    likes: v.optional(v.number()),
-    comments: v.optional(v.number()),
+    duration: v.number(),
   })
     .index('by_clerk_id', ['clerkId'])
     .index('by_topic', ['topic']),

@@ -26,8 +26,7 @@ import { api } from '@/convex/_generated/api';
 import { Hand, Mic, Pause, Play, Trash } from 'lucide-react';
 import { useUser } from '@clerk/nextjs';
 import { toast } from 'sonner';
-
-type Topic = 'twenty-somethings' | 'technology' | 'sports' | 'politics';
+import { Topic } from '@/lib/types';
 
 export function VoiceRecordDialog() {
   const { isOpen, close } = useVoiceDialogStore();
@@ -38,7 +37,6 @@ export function VoiceRecordDialog() {
   const [isPaused, setIsPaused] = useState(false);
   const [topic, setTopic] = useState<Topic | ''>('');
   const [isPending, startTransition] = useTransition();
-
   const generateUploadUrl = useMutation(api.voiceNotes.generateUploadUrl);
   const sendVoiceNote = useMutation(api.voiceNotes.sendVoiceNote);
 
@@ -84,9 +82,8 @@ export function VoiceRecordDialog() {
       mediaRecorder.onstop = () => {
         if (isOpen) {
           const audioBlob = new Blob(audioChunksRef.current, {
-            type: 'audio/mp3',
+            type: 'audio/webm',
           });
-          console.log(audioBlob);
           const url = URL.createObjectURL(audioBlob);
           setAudioURL(url);
 
@@ -232,22 +229,21 @@ export function VoiceRecordDialog() {
   const handleVoiceNoteUpload = async () => {
     startTransition(async () => {
       if (!user || !topic) return;
-      console.log('UPLOADING...');
       const voiceNoteUrl = await generateUploadUrl();
       const audioBlob = new Blob(audioChunksRef.current, {
-        type: 'audio/mp3',
+        type: 'audio/webm',
       });
       const result = await fetch(voiceNoteUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'audio/mp3' },
+        headers: { 'Content-Type': 'audio/webm' },
         body: audioBlob,
       });
       const { storageId } = await result.json();
       const { success, message } = await sendVoiceNote({
         clerkId: user.id,
-        username: user.username || '',
         storageId,
         topic: topic,
+        duration: recordingTime,
       });
       if (success) {
         toast.success(message);

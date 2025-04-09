@@ -15,8 +15,7 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
-import { ChevronUp } from 'lucide-react';
-import { User2 } from 'lucide-react';
+import { ChevronUp, Loader } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -27,6 +26,8 @@ import {
 } from './ui/dropdown-menu';
 import { SignedIn, useUser } from '@clerk/nextjs';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { useQuery } from 'convex/react';
+import { api } from '@/convex/_generated/api';
 const items = [
   {
     title: 'Twenty-somethings',
@@ -54,6 +55,9 @@ export function AppSidebar() {
   const pathname = usePathname();
   const { isMobile, toggleSidebar } = useSidebar();
   const user = useUser();
+
+  const topicCounts = useQuery(api.voiceNotes.getAllTopicCounts);
+
   return (
     <Sidebar>
       <SidebarHeader />
@@ -105,7 +109,15 @@ export function AppSidebar() {
                       </span>
                     </Link>
                   </SidebarMenuButton>
-                  <SidebarMenuBadge>24</SidebarMenuBadge>
+                  <SidebarMenuBadge>
+                    {topicCounts === undefined ? (
+                      <Loader className="animate-spin w-4 h-4" />
+                    ) : topicCounts?.[item.title.toLowerCase()] === 0 ? null : (
+                      <span className="bg-muted-foreground text-white rounded-full px-1.5 py-0.5 text-xs">
+                        {topicCounts?.[item.title.toLowerCase()]}
+                      </span>
+                    )}
+                  </SidebarMenuBadge>
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>

@@ -9,6 +9,7 @@ import { VoiceRecordDialog } from '@/components/voice-record-dialog';
 import { ClerkProvider } from '@clerk/nextjs';
 import { ConvexClientProvider } from '@/components/convex-client-provider';
 import { Toaster } from 'sonner';
+import { PageHeader } from '@/components/page-header';
 
 const ranadeFont = localFont({
   src: [
@@ -47,15 +48,19 @@ export default function RootLayout({
       <html lang="en">
         <body className={`bg-[#f9fafb]`}>
           <SidebarProvider>
-            <AppSidebar />
-            <main className="w-screen h-screen">
-              <Header />
-              <div className="border-b shadow-sm mb-2" />
-              <ConvexClientProvider>
-                <div className="px-4">{children}</div>
+            <ConvexClientProvider>
+              <AppSidebar />
+              <main className="w-screen h-screen">
+                <Header />
+                <div className="border-b shadow-sm mb-2" />
+
+                <div className="px-4">
+                  <PageHeader />
+                  {children}
+                </div>
                 <VoiceRecordDialog />
-              </ConvexClientProvider>
-            </main>
+              </main>
+            </ConvexClientProvider>
           </SidebarProvider>
           <Toaster richColors />
         </body>

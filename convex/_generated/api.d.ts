@@ -13,6 +13,7 @@ import type {
   FilterApi,
   FunctionReference,
 } from "convex/server";
+import type * as users from "../users.js";
 import type * as voiceNotes from "../voiceNotes.js";
 
 /**
@@ -24,6 +25,7 @@ import type * as voiceNotes from "../voiceNotes.js";
  * ```
  */
 declare const fullApi: ApiFromModules<{
+  users: typeof users;
   voiceNotes: typeof voiceNotes;
 }>;
 export declare const api: FilterApi<
