@@ -9,33 +9,22 @@ import {
   CardHeader,
 } from '@/components/ui/card';
 import { Button } from '../ui/button';
-import { useSidebar } from '../ui/sidebar';
-import {
-  Clock,
-  Heart,
-  MessageCircle,
-  MoreHorizontal,
-  Trash,
-  Trash2,
-} from 'lucide-react';
-
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
+import { ChevronDown, Clock, Heart, Mic, Trash } from 'lucide-react';
 
 import AudioPlayer from 'react-h5-audio-player';
 import 'react-h5-audio-player/lib/styles.css';
 
-import { Id } from '@/convex/_generated/dataModel';
-import { VoiceNote as VoiceNoteType } from '@/lib/types';
+import {
+  Topic,
+  voiceNoteTopicMap,
+  VoiceNote as VoiceNoteType,
+} from '@/lib/types';
 import { getTimeAgo } from '@/lib/helpers';
-import { useEffect } from 'react';
-import { useRef } from 'react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import { useVoiceDialogStore } from '@/lib/store';
+import ReplyVoiceNote from './reply-voice-note';
 
-function Checkmark() {
+export function Checkmark() {
   return (
     <span className="flex h-4 w-4 items-center justify-center rounded-full bg-primary">
       <svg
@@ -58,8 +47,9 @@ function Checkmark() {
 }
 
 export function VoiceNote({ voiceNote }: { voiceNote: VoiceNoteType }) {
+  const { open } = useVoiceDialogStore();
   const timeStamp = getTimeAgo(voiceNote._creationTime);
-
+  const [isRepliesOpen, setIsRepliesOpen] = useState(false);
   if (voiceNote.url) {
     return (
       <Card>
@@ -79,26 +69,34 @@ export function VoiceNote({ voiceNote }: { voiceNote: VoiceNoteType }) {
           </div>
           <div>
             <p className="text-xs text-muted-foreground">
-              👨‍🎓 Twenty-somethings
+              {
+                voiceNoteTopicMap[
+                  voiceNote.topic as keyof typeof voiceNoteTopicMap
+                ]
+              }
             </p>
           </div>
         </CardHeader>
         <CardContent>
           <p className="flex items-center gap-1 text-sm text-muted-foreground p-2">
-            <Clock className="w-4 h-4" /> {voiceNote.duration}s
+            <Clock className="w-4 h-4" />{' '}
+            {Math.floor(voiceNote.duration / 1000)}s
           </p>
           {/* <audio src={voiceNote.url ?? ''} controls className="w-full" /> */}
           <AudioPlayer src={voiceNote.url} />
         </CardContent>
-        <CardFooter>
-          <div className="flex items-center justify-between w-full">
+        <CardFooter className="flex flex-col">
+          <div className="flex items-center justify-between w-full mb-4">
             <div className="flex gap-2">
               <Button variant={'outline'}>
                 <Heart />
               </Button>
 
-              <Button variant={'outline'}>
-                <MessageCircle className="text-green-500" />
+              <Button
+                variant={'outline'}
+                onClick={() => open(voiceNote._id, voiceNote.topic as Topic)}
+              >
+                <Mic className="w-4 h-4" />
               </Button>
             </div>
             <div>
@@ -112,6 +110,29 @@ export function VoiceNote({ voiceNote }: { voiceNote: VoiceNoteType }) {
               </Button>
             </div>
           </div>
+
+          {voiceNote.replies.length > 0 && (
+            <button
+              onClick={() => setIsRepliesOpen(!isRepliesOpen)}
+              className="flex justify-between w-full items-center hover:bg-muted p-2 rounded-md cursor-pointer"
+            >
+              <span className="text-xs font-semibold">
+                {`${voiceNote.replies.length} ${voiceNote.replies.length > 1 ? 'replies' : 'reply'}`}{' '}
+              </span>
+              <ChevronDown
+                className={`w-4 h-4 ${isRepliesOpen ? 'rotate-180' : ''}`}
+              />
+            </button>
+          )}
+
+          {isRepliesOpen && (
+            <div className="flex flex-col gap-2 w-full">
+              <hr className="w-full my-4" />
+              {voiceNote.replies.map((reply) => (
+                <ReplyVoiceNote key={reply._id} voiceNote={reply} />
+              ))}
+            </div>
+          )}
         </CardFooter>
       </Card>
     );

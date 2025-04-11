@@ -12,14 +12,15 @@ export default defineSchema({
   voiceNotes: defineTable({
     clerkId: v.string(),
     storageId: v.id('_storage'),
-    topic: v.union(
-      v.literal('twenty-somethings'),
-      v.literal('technology'),
-      v.literal('sports'),
-      v.literal('politics')
-    ),
+    topic: v.string(),
     duration: v.number(),
+    isReply: v.boolean(),
+    parentId: v.optional(v.id('voiceNotes')),
+    likes: v.optional(v.number()),
+    replies: v.optional(v.number()),
+    likedBy: v.optional(v.array(v.string())),
   })
     .index('by_clerk_id', ['clerkId'])
-    .index('by_topic', ['topic']),
+    .index('by_topic', ['topic'])
+    .index('by_parent_id', ['parentId']),
 });

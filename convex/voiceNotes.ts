@@ -1,5 +1,7 @@
 import { v } from 'convex/values';
 import { mutation, query } from './_generated/server';
+import { TopicEnum } from '@/lib/types';
+import { Id } from './_generated/dataModel';
 
 export const generateUploadUrl = mutation({
   handler: async (ctx) => {
@@ -15,18 +17,19 @@ export const sendVoiceNote = mutation({
   args: {
     clerkId: v.string(),
     storageId: v.id('_storage'),
-    topic: v.union(
-      v.literal('twenty-somethings'),
-      v.literal('technology'),
-      v.literal('sports'),
-      v.literal('politics')
-    ),
+    topic: v.string(),
     duration: v.number(),
+    isReply: v.boolean(),
+    parentId: v.optional(v.id('voiceNotes')),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {
       throw new Error('Unauthorized');
+    }
+
+    if (!Object.values(TopicEnum).includes(args.topic as TopicEnum)) {
+      throw new Error('Invalid topic');
     }
 
     try {
@@ -35,6 +38,8 @@ export const sendVoiceNote = mutation({
         storageId: args.storageId,
         topic: args.topic,
         duration: args.duration,
+        isReply: args.isReply,
+        parentId: args.parentId,
       });
       return { success: true, message: 'Voice note sent successfully' };
     } catch (e) {
@@ -46,24 +51,40 @@ export const sendVoiceNote = mutation({
 
 export const getVoiceNotes = query({
   args: {
-    topic: v.union(
-      v.literal('twenty-somethings'),
-      v.literal('technology'),
-      v.literal('sports'),
-      v.literal('politics')
-    ),
+    topic: v.string(),
   },
   handler: async (ctx, args) => {
-    const voiceNotes = await ctx.db
+    // Step 1: Fetch all voice notes for the topic, including replies
+    const allVoiceNotes = await ctx.db
       .query('voiceNotes')
       .withIndex('by_topic', (q) => q.eq('topic', args.topic))
       .order('desc')
       .collect();
 
-    const clerkIds = [
-      ...new Set(voiceNotes.map((voiceNote) => voiceNote.clerkId)),
-    ];
+    // Step 2: Organize notes by ID for quick lookup
+    const notesById = new Map<string, any>(
+      allVoiceNotes.map((note) => [note._id, { ...note, replies: [] }])
+    );
 
+    // Step 3: Build the tree by linking replies to parents
+    const topLevelNotes: any[] = [];
+    for (const note of allVoiceNotes) {
+      if (!note.isReply || !note.parentId) {
+        // Top-level note (not a reply)
+        topLevelNotes.push(notesById.get(note._id));
+      } else if (note.parentId && notesById.has(note.parentId)) {
+        // Reply: add to parent's replies array
+        const parent = notesById.get(note.parentId);
+        if (parent) {
+          parent.replies.push(notesById.get(note._id));
+        }
+      }
+    }
+
+    // Step 4: Collect unique clerkIds across all notes
+    const clerkIds = [...new Set(allVoiceNotes.map((note) => note.clerkId))];
+
+    // Step 5: Fetch user data in bulk
     const users = await Promise.all(
       clerkIds.map(async (clerkId) =>
         ctx.db
@@ -72,27 +93,28 @@ export const getVoiceNotes = query({
           .first()
       )
     );
-
     const userMap = new Map(
       users.filter((user) => user !== null).map((user) => [user.clerkId, user])
     );
 
-    return Promise.all(
-      voiceNotes.map(async (voiceNote) => {
-        const user = userMap.get(voiceNote.clerkId);
-        return {
-          ...voiceNote,
-          url: await ctx.storage.getUrl(voiceNote.storageId),
-          user: user,
-        };
-      })
-    );
+    // Step 6: Enrich notes with URLs and user data, recursively
+    const enrichNote = async (note: any): Promise<any> => {
+      const user = userMap.get(note.clerkId);
+      const url = await ctx.storage.getUrl(note.storageId as Id<'_storage'>);
+      return {
+        ...note,
+        url,
+        user,
+        replies: await Promise.all(note.replies.map(enrichNote)),
+      };
+    };
+
+    // Step 7: Return enriched top-level notes
+    return Promise.all(topLevelNotes.map(enrichNote));
   },
 });
 
-// ... existing code ...
-
-export const getAllTopicCounts = query({
+export const getAllParentVoiceNotes = query({
   args: {},
   handler: async (ctx) => {
     const topics = [
@@ -102,7 +124,10 @@ export const getAllTopicCounts = query({
       'politics',
     ] as const;
 
-    const voiceNotes = await ctx.db.query('voiceNotes').collect();
+    const voiceNotes = await ctx.db
+      .query('voiceNotes')
+      .filter((q) => q.eq(q.field('isReply'), false))
+      .collect();
 
     const counts = Object.fromEntries(
       topics.map((topic) => [

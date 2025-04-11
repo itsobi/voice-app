@@ -30,7 +30,7 @@ export function Header() {
           </SignInButton>
         </SignedOut>
         <SignedIn>
-          <Button variant="outline" onClick={open}>
+          <Button variant="outline" onClick={() => open(undefined, undefined)}>
             <span className="text-xl">🎙️</span>
           </Button>
           <UserButton />

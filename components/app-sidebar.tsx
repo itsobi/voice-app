@@ -36,7 +36,7 @@ const items = [
   },
   {
     title: 'Technology',
-    url: '#',
+    url: '/technology',
     emoji: '💻',
   },
   {
@@ -56,7 +56,7 @@ export function AppSidebar() {
   const { isMobile, toggleSidebar } = useSidebar();
   const user = useUser();
 
-  const topicCounts = useQuery(api.voiceNotes.getAllTopicCounts);
+  const topicCounts = useQuery(api.voiceNotes.getAllParentVoiceNotes);
 
   return (
     <Sidebar>
@@ -94,7 +94,7 @@ export function AppSidebar() {
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild isActive={pathname === item.url}>
                     <Link
-                      href={'/twenty-somethings'}
+                      href={item.url}
                       onClick={isMobile ? toggleSidebar : undefined}
                     >
                       <span className="text-lg">{item.emoji}</span>

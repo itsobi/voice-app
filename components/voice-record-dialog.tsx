@@ -29,7 +29,13 @@ import { toast } from 'sonner';
 import { Topic } from '@/lib/types';
 
 export function VoiceRecordDialog() {
-  const { isOpen, close } = useVoiceDialogStore();
+  const {
+    isOpen,
+    close,
+    parentId,
+    topic: topicFromStore,
+  } = useVoiceDialogStore();
+
   const { user } = useUser();
   const [isRecording, setIsRecording] = useState(false);
   const [audioURL, setAudioURL] = useState<string | null>(null);
@@ -103,7 +109,7 @@ export function VoiceRecordDialog() {
       // Start timer
       timerRef.current = setInterval(() => {
         setRecordingTime((prevTime) => {
-          if (prevTime > 29) {
+          if (prevTime >= 30000) {
             if (mediaRecorderRef.current) {
               mediaRecorderRef.current.stop();
               setIsRecording(false);
@@ -113,11 +119,11 @@ export function VoiceRecordDialog() {
               clearInterval(timerRef.current);
               timerRef.current = null;
             }
-            return 30;
+            return 30000;
           }
-          return prevTime + 1;
+          return prevTime + 100;
         });
-      }, 1000);
+      }, 100);
     } catch (error) {
       console.error('Error accessing microphone:', error);
       alert(
@@ -148,7 +154,7 @@ export function VoiceRecordDialog() {
       // resume timer
       timerRef.current = setInterval(() => {
         setRecordingTime((prevTime) => {
-          if (prevTime > 29) {
+          if (prevTime >= 30000) {
             if (mediaRecorderRef.current) {
               mediaRecorderRef.current.stop();
               setIsRecording(false);
@@ -158,11 +164,11 @@ export function VoiceRecordDialog() {
               clearInterval(timerRef.current);
               timerRef.current = null;
             }
-            return 30;
+            return 30000;
           }
-          return prevTime + 1;
+          return prevTime + 100;
         });
-      }, 1000);
+      }, 100);
     }
   };
 
@@ -217,18 +223,23 @@ export function VoiceRecordDialog() {
     setIsPaused(false);
   };
 
-  const formatTime = (seconds: number) => {
+  const formatTime = (milliseconds: number) => {
+    const seconds = Math.floor(milliseconds / 1000);
+    const ms = milliseconds % 1000;
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
 
     return `${minutes.toString().padStart(2, '0')}:${remainingSeconds
       .toString()
-      .padStart(2, '0')}`;
+      .padStart(2, '0')}.${Math.floor(ms / 100)}`; // Show only one decimal place
   };
 
   const handleVoiceNoteUpload = async () => {
     startTransition(async () => {
-      if (!user || !topic) return;
+      if (!user || (!topicFromStore && !topic)) {
+        toast.error('Make sure you are signed in and a topic is selected');
+        return;
+      }
       const voiceNoteUrl = await generateUploadUrl();
       const audioBlob = new Blob(audioChunksRef.current, {
         type: 'audio/webm',
@@ -242,8 +253,10 @@ export function VoiceRecordDialog() {
       const { success, message } = await sendVoiceNote({
         clerkId: user.id,
         storageId,
-        topic: topic,
+        topic: topicFromStore ? topicFromStore : topic,
         duration: recordingTime,
+        isReply: parentId ? true : false,
+        parentId: parentId ? parentId : undefined,
       });
       if (success) {
         toast.success(message);
@@ -266,10 +279,13 @@ export function VoiceRecordDialog() {
       <DialogTrigger className="hidden">Open</DialogTrigger>
       <DialogContent>
         <DialogHeader className="text-left">
-          <DialogTitle className="text-left">Voice Record</DialogTitle>
+          <DialogTitle className="text-left">
+            {parentId ? 'Reply' : 'Voice Record'}
+          </DialogTitle>
           <DialogDescription>
-            Select a topic and press the microphone to start recording. You have
-            30 seconds to record your note.
+            {parentId
+              ? 'You have 30 seconds to record your reply'
+              : 'Select a topic and press the microphone to start recording. You have 30 seconds to record your note.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -281,8 +297,9 @@ export function VoiceRecordDialog() {
             Select Topic
           </label>
           <Select
-            value={topic}
+            value={topicFromStore ? topicFromStore : topic}
             onValueChange={(value) => setTopic(value as Topic)}
+            disabled={!!topicFromStore}
           >
             <SelectTrigger id="room-select" className="w-full">
               <SelectValue placeholder="Select the topic" />
@@ -306,9 +323,9 @@ export function VoiceRecordDialog() {
               <span
                 className={cn(
                   'text-lg font-thin',
-                  isRecording && recordingTime > 19
+                  isRecording && recordingTime > 19000
                     ? 'text-red-500 animate-pulse'
-                    : isRecording && recordingTime > 14
+                    : isRecording && recordingTime > 14000
                       ? 'text-yellow-400 animate-pulse'
                       : isRecording && 'text-primary animate-pulse'
                 )}
@@ -372,7 +389,7 @@ export function VoiceRecordDialog() {
                 </div>
                 <Button
                   onClick={handleVoiceNoteUpload}
-                  disabled={!audioURL || !topic}
+                  disabled={!audioURL || (!topicFromStore && !topic)}
                   className="w-full"
                 >
                   {isPending ? (
