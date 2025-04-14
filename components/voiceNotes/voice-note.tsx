@@ -20,9 +20,10 @@ import {
   VoiceNote as VoiceNoteType,
 } from '@/lib/types';
 import { getTimeAgo } from '@/lib/helpers';
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { useVoiceDialogStore } from '@/lib/store';
 import ReplyVoiceNote from './reply-voice-note';
+import { cn } from '@/lib/utils';
 
 export function Checkmark() {
   return (
@@ -46,13 +47,18 @@ export function Checkmark() {
   );
 }
 
-export function VoiceNote({ voiceNote }: { voiceNote: VoiceNoteType }) {
+interface VoiceNoteProps {
+  voiceNote: VoiceNoteType;
+}
+
+export function VoiceNote({ voiceNote }: VoiceNoteProps) {
   const { open } = useVoiceDialogStore();
   const timeStamp = getTimeAgo(voiceNote._creationTime);
   const [isRepliesOpen, setIsRepliesOpen] = useState(false);
+
   if (voiceNote.url) {
     return (
-      <Card>
+      <Card className="w-full h-fit">
         <CardHeader className="flex justify-between">
           <div className="flex gap-1">
             <Avatar>
@@ -120,16 +126,21 @@ export function VoiceNote({ voiceNote }: { voiceNote: VoiceNoteType }) {
                 {`${voiceNote.replies.length} ${voiceNote.replies.length > 1 ? 'replies' : 'reply'}`}{' '}
               </span>
               <ChevronDown
-                className={`w-4 h-4 ${isRepliesOpen ? 'rotate-180' : ''}`}
+                className={cn('w-4 h-4', isRepliesOpen && 'rotate-180')}
               />
             </button>
           )}
 
           {isRepliesOpen && (
-            <div className="flex flex-col gap-2 w-full">
+            <div className="flex flex-col gap-2 w-full max-h-[300px] overflow-y-auto">
               <hr className="w-full my-4" />
-              {voiceNote.replies.map((reply) => (
-                <ReplyVoiceNote key={reply._id} voiceNote={reply} />
+              {voiceNote.replies.map((reply, index) => (
+                <ReplyVoiceNote
+                  key={reply._id}
+                  voiceNote={reply}
+                  showSeparator={index !== voiceNote.replies.length - 1}
+                  level={0}
+                />
               ))}
             </div>
           )}

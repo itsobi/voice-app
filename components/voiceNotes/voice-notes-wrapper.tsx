@@ -14,7 +14,7 @@ export function VoiceNotesWrapper({
   const voiceNotes = usePreloadedQuery(preloadedVoiceNotes);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
       {voiceNotes.map((voiceNote) =>
         voiceNote.url ? (
           <VoiceNote key={voiceNote._id} voiceNote={voiceNote} />

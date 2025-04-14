@@ -1,17 +1,33 @@
-import { VoiceNote } from '@/lib/types';
+'use client';
+
+import { Topic, VoiceNote } from '@/lib/types';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { getTimeAgo } from '@/lib/helpers';
 import { Checkmark } from './voice-note';
-import { Clock, CornerDownRight } from 'lucide-react';
+import { ChevronDown, Clock, CornerDownRight } from 'lucide-react';
 import { Button } from '../ui/button';
+import { useVoiceDialogStore } from '@/lib/store';
+import { useState } from 'react';
+import { cn } from '@/lib/utils';
+
 interface ReplyVoiceNoteProps {
   voiceNote: VoiceNote;
+  showSeparator: boolean;
+  level: number;
 }
 
-export default function ReplyVoiceNote({ voiceNote }: ReplyVoiceNoteProps) {
+export default function ReplyVoiceNote({
+  voiceNote,
+  showSeparator,
+  level,
+}: ReplyVoiceNoteProps) {
   const timeStamp = getTimeAgo(voiceNote._creationTime);
+  const { open } = useVoiceDialogStore();
+  const [isRepliesOpen, setIsRepliesOpen] = useState(false);
   return (
-    <div>
+    <div
+      className={cn('p-4', level > 0 && 'pl-4 border-l-2 border-muted ml-3')}
+    >
       <div className="flex items-center justify-between text-sm">
         <div className="flex items-center">
           <Avatar className="mr-0.5">
@@ -34,7 +50,7 @@ export default function ReplyVoiceNote({ voiceNote }: ReplyVoiceNoteProps) {
               <Clock className="w-4 h-4" />{' '}
               {Math.floor(voiceNote.duration / 1000)}s
             </span>
-            <audio src={voiceNote.url} controls />
+            <audio src={voiceNote.url} controls className="w-full" />
           </div>
         ) : (
           <span className="text-xs text-red-500">
@@ -43,17 +59,44 @@ export default function ReplyVoiceNote({ voiceNote }: ReplyVoiceNoteProps) {
         )}
       </div>
       <div className="mt-4 flex items-center gap-2">
-        <Button variant="ghost" className="w-fit flex items-center gap-2 ">
+        <Button
+          onClick={() => {
+            open(voiceNote._id, voiceNote.topic as Topic);
+          }}
+          variant="ghost"
+          className="w-fit flex items-center gap-2 "
+        >
           <CornerDownRight className="w-4 h-4" /> <span>Reply</span>
         </Button>
         {voiceNote.replies.length > 0 && (
-          <Button variant="ghost" className="w-fit flex items-center gap-2 ">
+          <Button
+            onClick={() => {
+              setIsRepliesOpen(!isRepliesOpen);
+            }}
+            variant="ghost"
+            className="w-fit flex items-center gap-2 "
+          >
+            <ChevronDown
+              className={cn('w-4 h-4', isRepliesOpen && 'rotate-180')}
+            />{' '}
             <span>
-              {`Show ${voiceNote.replies.length} ${voiceNote.replies.length > 1 ? 'replies' : 'reply'}`}
+              {isRepliesOpen
+                ? 'Hide replies'
+                : `Show ${voiceNote.replies.length} ${voiceNote.replies.length > 1 ? 'replies' : 'reply'}`}
             </span>
           </Button>
         )}
       </div>
+      {isRepliesOpen &&
+        voiceNote.replies.map((reply, index) => (
+          <ReplyVoiceNote
+            key={reply._id}
+            level={level + 1}
+            showSeparator={index !== voiceNote.replies.length - 1}
+            voiceNote={reply}
+          />
+        ))}
+      {showSeparator && <hr className="my-4" />}
     </div>
   );
 }
