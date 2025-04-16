@@ -24,6 +24,8 @@ import { useState } from 'react';
 import { useVoiceDialogStore } from '@/lib/store';
 import ReplyVoiceNote from './reply-voice-note';
 import { cn } from '@/lib/utils';
+import { DeleteButton } from './delete-button';
+import { useUser } from '@clerk/clerk-react';
 
 export function Checkmark() {
   return (
@@ -55,6 +57,7 @@ export function VoiceNote({ voiceNote }: VoiceNoteProps) {
   const { open } = useVoiceDialogStore();
   const timeStamp = getTimeAgo(voiceNote._creationTime);
   const [isRepliesOpen, setIsRepliesOpen] = useState(false);
+  const { user } = useUser();
 
   if (voiceNote.url) {
     return (
@@ -105,16 +108,15 @@ export function VoiceNote({ voiceNote }: VoiceNoteProps) {
                 <Mic className="w-4 h-4" />
               </Button>
             </div>
-            <div>
-              <Button
-                variant={'outline'}
-                onClick={() =>
-                  window.confirm('Are you sure you want to delete this note?')
-                }
-              >
-                <Trash className="text-red-500" />
-              </Button>
-            </div>
+            {user?.id === voiceNote.clerkId && (
+              <div>
+                <DeleteButton
+                  voiceNoteId={voiceNote._id}
+                  voiceNoteClerkId={voiceNote.clerkId}
+                  storageId={voiceNote.storageId}
+                />
+              </div>
+            )}
           </div>
 
           {voiceNote.replies.length > 0 && (

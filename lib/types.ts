@@ -24,6 +24,7 @@ export type VoiceNote = {
   _creationTime: number;
   topic: string;
   duration: number;
+  parentId: string;
   replies: VoiceNote[] | [];
   user?: {
     _id: Id<'users'>;

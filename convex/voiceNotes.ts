@@ -139,3 +139,74 @@ export const getAllParentVoiceNotes = query({
     return counts;
   },
 });
+
+export const deleteVoiceNote = mutation({
+  args: {
+    voiceNoteId: v.id('voiceNotes'),
+    storageId: v.id('_storage'),
+    clerkId: v.string(),
+    voiceNoteClerkId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    try {
+      const identity = await ctx.auth.getUserIdentity();
+      if (!identity) {
+        throw new Error('Unauthorized');
+      }
+
+      // making sure the clerkId passed in is the same as the top level voice note being deleted
+      if (args.clerkId !== args.voiceNoteClerkId) {
+        throw new Error('Unauthorized');
+      }
+
+      const getAllReplyIds = async (
+        parentId: Id<'voiceNotes'>
+      ): Promise<{
+        noteIds: Id<'voiceNotes'>[];
+        storageIds: Id<'_storage'>[];
+      }> => {
+        const replies = await ctx.db
+          .query('voiceNotes')
+          .withIndex('by_parent_id', (q) => q.eq('parentId', parentId))
+          .collect();
+
+        let allVoiceNoteIds: Id<'voiceNotes'>[] = [];
+        let allStorageIds: Id<'_storage'>[] = [];
+
+        allVoiceNoteIds.push(...replies.map((reply) => reply._id));
+        allStorageIds.push(...replies.map((reply) => reply.storageId));
+
+        for (const reply of replies) {
+          const nestedReplies = await getAllReplyIds(reply._id);
+          allVoiceNoteIds.push(...nestedReplies.noteIds);
+          allStorageIds.push(...nestedReplies.storageIds);
+        }
+
+        return { noteIds: allVoiceNoteIds, storageIds: allStorageIds };
+      };
+
+      // Get all reply IDs and storage IDs
+      const replyIds = await getAllReplyIds(args.voiceNoteId);
+
+      // Delete all replies and their storage files
+      await ctx.db.delete(args.voiceNoteId);
+      for (const noteId of replyIds.noteIds) {
+        await ctx.db.delete(noteId);
+      }
+      await ctx.storage.delete(args.storageId);
+      for (const storageId of replyIds.storageIds) {
+        await ctx.storage.delete(storageId);
+      }
+
+      return {
+        success: true,
+        message: 'Successfully deleted voice note.',
+      };
+    } catch {
+      return {
+        success: false,
+        message: 'Failed to delete voice note.',
+      };
+    }
+  },
+});

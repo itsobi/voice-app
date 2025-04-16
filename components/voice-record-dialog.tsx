@@ -27,6 +27,7 @@ import { Hand, Mic, Pause, Play, Trash } from 'lucide-react';
 import { useUser } from '@clerk/nextjs';
 import { toast } from 'sonner';
 import { Topic } from '@/lib/types';
+import { usePathname, useRouter } from 'next/navigation';
 
 export function VoiceRecordDialog() {
   const {
@@ -37,14 +38,19 @@ export function VoiceRecordDialog() {
   } = useVoiceDialogStore();
 
   const { user } = useUser();
+
   const [isRecording, setIsRecording] = useState(false);
   const [audioURL, setAudioURL] = useState<string | null>(null);
   const [recordingTime, setRecordingTime] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [topic, setTopic] = useState<Topic | ''>('');
+
   const [isPending, startTransition] = useTransition();
   const generateUploadUrl = useMutation(api.voiceNotes.generateUploadUrl);
   const sendVoiceNote = useMutation(api.voiceNotes.sendVoiceNote);
+
+  const router = useRouter();
+  const pathname = usePathname();
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -259,6 +265,9 @@ export function VoiceRecordDialog() {
         parentId: parentId ? parentId : undefined,
       });
       if (success) {
+        if (pathname === '/') {
+          router.push(`/${topicFromStore ?? topic}`);
+        }
         toast.success(message);
         close();
       } else {
