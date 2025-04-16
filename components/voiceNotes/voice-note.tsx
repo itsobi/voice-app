@@ -20,12 +20,14 @@ import {
   VoiceNote as VoiceNoteType,
 } from '@/lib/types';
 import { getTimeAgo } from '@/lib/helpers';
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 import { useVoiceDialogStore } from '@/lib/store';
 import ReplyVoiceNote from './reply-voice-note';
 import { cn } from '@/lib/utils';
 import { DeleteButton } from './delete-button';
 import { useUser } from '@clerk/clerk-react';
+import { useMutation } from 'convex/react';
+import { api } from '@/convex/_generated/api';
 
 export function Checkmark() {
   return (
@@ -58,6 +60,17 @@ export function VoiceNote({ voiceNote }: VoiceNoteProps) {
   const timeStamp = getTimeAgo(voiceNote._creationTime);
   const [isRepliesOpen, setIsRepliesOpen] = useState(false);
   const { user } = useUser();
+  const [isPending, startTransition] = useTransition();
+  const likeVoiceNote = useMutation(api.voiceNotes.likeVoiceNote);
+
+  const handleLikeVoiceNote = async () => {
+    startTransition(async () => {
+      likeVoiceNote({
+        clerkUserId: user?.id ?? '',
+        voiceNoteId: voiceNote._id,
+      });
+    });
+  };
 
   if (voiceNote.url) {
     return (
@@ -96,20 +109,40 @@ export function VoiceNote({ voiceNote }: VoiceNoteProps) {
         </CardContent>
         <CardFooter className="flex flex-col">
           <div className="flex items-center justify-between w-full mb-4">
-            <div className="flex gap-2">
-              <Button variant={'outline'}>
-                <Heart />
-              </Button>
+            {user?.id !== voiceNote.clerkId && (
+              <div className="flex gap-2">
+                <div className="relative">
+                  {voiceNote.likedBy?.length ? (
+                    <div className="absolute p-2 -top-5 -right-1">
+                      <span
+                        className={cn(
+                          voiceNote.likedBy.length && 'text-green-500'
+                        )}
+                      >
+                        {voiceNote.likedBy.length}
+                      </span>
+                    </div>
+                  ) : null}
+                  <Button
+                    onClick={handleLikeVoiceNote}
+                    variant={'outline'}
+                    disabled={isPending}
+                  >
+                    <Heart />
+                  </Button>
+                </div>
 
-              <Button
-                variant={'outline'}
-                onClick={() => open(voiceNote._id, voiceNote.topic as Topic)}
-              >
-                <Mic className="w-4 h-4" />
-              </Button>
-            </div>
+                <Button
+                  variant={'outline'}
+                  onClick={() => open(voiceNote._id, voiceNote.topic as Topic)}
+                >
+                  <Mic className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
+
             {user?.id === voiceNote.clerkId && (
-              <div>
+              <div className="ml-auto">
                 <DeleteButton
                   voiceNoteId={voiceNote._id}
                   voiceNoteClerkId={voiceNote.clerkId}

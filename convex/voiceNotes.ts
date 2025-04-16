@@ -210,3 +210,31 @@ export const deleteVoiceNote = mutation({
     }
   },
 });
+
+export const likeVoiceNote = mutation({
+  args: {
+    voiceNoteId: v.id('voiceNotes'),
+    clerkUserId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error('Unauthorized');
+    }
+
+    const voiceNote = await ctx.db.get(args.voiceNoteId);
+
+    const likedBy = voiceNote?.likedBy ?? [];
+    const likedBySet = new Set(likedBy);
+
+    if (likedBySet?.has(args.clerkUserId)) {
+      await ctx.db.patch(args.voiceNoteId, {
+        likedBy: likedBy.filter((id) => id !== args.clerkUserId),
+      });
+    } else {
+      await ctx.db.patch(args.voiceNoteId, {
+        likedBy: [...likedBy, args.clerkUserId],
+      });
+    }
+  },
+});

@@ -26,6 +26,7 @@ export type VoiceNote = {
   duration: number;
   parentId: string;
   replies: VoiceNote[] | [];
+  likedBy?: string[];
   user?: {
     _id: Id<'users'>;
     clerkId: string;
