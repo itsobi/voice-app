@@ -9,10 +9,7 @@ import {
   CardHeader,
 } from '@/components/ui/card';
 import { Button } from '../ui/button';
-import { ChevronDown, Clock, Heart, Mic, Trash } from 'lucide-react';
-
-import AudioPlayer from 'react-h5-audio-player';
-import 'react-h5-audio-player/lib/styles.css';
+import { ChevronDown, Clock, Heart, Mic } from 'lucide-react';
 
 import {
   Topic,
@@ -28,6 +25,8 @@ import { DeleteButton } from './delete-button';
 import { useUser } from '@clerk/clerk-react';
 import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 export function Checkmark() {
   return (
@@ -57,9 +56,10 @@ interface VoiceNoteProps {
 
 export function VoiceNote({ voiceNote }: VoiceNoteProps) {
   const { open } = useVoiceDialogStore();
+  const { user } = useUser();
   const timeStamp = getTimeAgo(voiceNote._creationTime);
   const [isRepliesOpen, setIsRepliesOpen] = useState(false);
-  const { user } = useUser();
+  const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
   const likeVoiceNote = useMutation(api.voiceNotes.likeVoiceNote);
 
@@ -100,46 +100,59 @@ export function VoiceNote({ voiceNote }: VoiceNoteProps) {
           </div>
         </CardHeader>
         <CardContent>
-          <p className="flex items-center gap-1 text-sm text-muted-foreground p-2">
+          {pathname === '/' ||
+            (pathname === `/${voiceNote.topic}` && (
+              <Link
+                href={`/${voiceNote.topic}/${voiceNote._id}`}
+                className="text-xs text-muted-foreground hover:underline"
+              >
+                Go to voice note
+              </Link>
+            ))}
+          <p className="flex items-center gap-1 text-sm text-muted-foreground p-2 justify-end">
             <Clock className="w-4 h-4" />{' '}
             {Math.floor(voiceNote.duration / 1000)}s
           </p>
-          {/* <audio src={voiceNote.url ?? ''} controls className="w-full" /> */}
-          <AudioPlayer src={voiceNote.url} />
+          <audio src={voiceNote.url ?? ''} controls className="w-full" />
         </CardContent>
         <CardFooter className="flex flex-col">
           <div className="flex items-center justify-between w-full mb-4">
-            {user?.id !== voiceNote.clerkId && (
-              <div className="flex gap-2">
-                <div className="relative">
-                  {voiceNote.likedBy?.length ? (
-                    <div className="absolute p-2 -top-5 -right-1">
-                      <span
-                        className={cn(
-                          voiceNote.likedBy.length && 'text-green-500'
-                        )}
-                      >
-                        {voiceNote.likedBy.length}
-                      </span>
-                    </div>
-                  ) : null}
-                  <Button
-                    onClick={handleLikeVoiceNote}
-                    variant={'outline'}
-                    disabled={isPending}
-                  >
-                    <Heart />
-                  </Button>
-                </div>
-
+            <div className="flex gap-2">
+              <div className="relative">
+                {voiceNote.likedBy?.length ? (
+                  <div className="absolute flex items-center justify-center w-5 h-5 -top-2 -right-1 rounded-full bg-green-500 z-10">
+                    <span
+                      className={cn(
+                        voiceNote.likedBy.length && 'text-white text-sm'
+                      )}
+                    >
+                      {voiceNote.likedBy.length}
+                    </span>
+                  </div>
+                ) : null}
                 <Button
+                  onClick={handleLikeVoiceNote}
                   variant={'outline'}
-                  onClick={() => open(voiceNote._id, voiceNote.topic as Topic)}
+                  disabled={!user?.id || isPending}
                 >
-                  <Mic className="w-4 h-4" />
+                  <Heart />
                 </Button>
               </div>
-            )}
+
+              <Button
+                variant={'outline'}
+                onClick={() =>
+                  open(
+                    voiceNote._id,
+                    voiceNote.topic as Topic,
+                    voiceNote.clerkId
+                  )
+                }
+                disabled={!user?.id || isPending}
+              >
+                <Mic className="w-4 h-4" />
+              </Button>
+            </div>
 
             {user?.id === voiceNote.clerkId && (
               <div className="ml-auto">

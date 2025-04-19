@@ -5,6 +5,7 @@ import { Button } from './ui/button';
 import { SidebarTrigger } from './ui/sidebar';
 import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/nextjs';
 import { toast } from 'sonner';
+import { Notifications } from './notifications';
 export function Header() {
   const { open } = useVoiceDialogStore();
   return (
@@ -30,9 +31,13 @@ export function Header() {
           </SignInButton>
         </SignedOut>
         <SignedIn>
-          <Button variant="outline" onClick={() => open(undefined, undefined)}>
-            <span className="text-xl">🎙️</span>
+          <Button
+            variant="outline"
+            onClick={() => open(undefined, undefined, undefined)}
+          >
+            <span className="text-lg">🎙️</span>
           </Button>
+          <Notifications />
           <UserButton />
         </SignedIn>
       </div>

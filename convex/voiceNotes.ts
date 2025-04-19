@@ -2,6 +2,7 @@ import { v } from 'convex/values';
 import { mutation, query } from './_generated/server';
 import { TopicEnum } from '@/lib/types';
 import { Id } from './_generated/dataModel';
+import { api } from './_generated/api';
 
 export const generateUploadUrl = mutation({
   handler: async (ctx) => {
@@ -21,6 +22,7 @@ export const sendVoiceNote = mutation({
     duration: v.number(),
     isReply: v.boolean(),
     parentId: v.optional(v.id('voiceNotes')),
+    voiceNoteClerkId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -41,6 +43,13 @@ export const sendVoiceNote = mutation({
         isReply: args.isReply,
         parentId: args.parentId,
       });
+      if (args.isReply && args.voiceNoteClerkId) {
+        await ctx.runMutation(api.notifications.createNotification, {
+          userId: args.voiceNoteClerkId,
+          senderUserId: args.clerkId,
+          type: 'reply',
+        });
+      }
       return { success: true, message: 'Voice note sent successfully' };
     } catch (e) {
       console.error(e);
@@ -114,6 +123,90 @@ export const getVoiceNotes = query({
   },
 });
 
+export const getVoiceNoteById = query({
+  args: {
+    voiceNoteId: v.id('voiceNotes'),
+  },
+  handler: async (ctx, args) => {
+    const voiceNote = await ctx.db.get(args.voiceNoteId);
+    if (!voiceNote) {
+      return null;
+    }
+
+    // Get all replies (both direct and nested) for this voice note
+    const allReplies = await ctx.db
+      .query('voiceNotes')
+      .filter((q) =>
+        q.or(
+          q.eq(q.field('parentId'), args.voiceNoteId),
+          q.eq(q.field('isReply'), true)
+        )
+      )
+      .collect();
+
+    // Organize notes by ID for quick lookup
+    const notesById = new Map<string, any>(
+      allReplies.map((note) => [note._id, { ...note, replies: [] }])
+    );
+
+    // Build the reply tree
+    const topLevelReplies: any[] = [];
+    for (const reply of allReplies) {
+      if (reply.parentId === args.voiceNoteId) {
+        // Direct reply to the main voice note
+        topLevelReplies.push(notesById.get(reply._id));
+      } else if (reply.parentId && notesById.has(reply.parentId)) {
+        // Nested reply: add to parent's replies array
+        const parent = notesById.get(reply.parentId);
+        if (parent) {
+          parent.replies.push(notesById.get(reply._id));
+        }
+      }
+    }
+
+    // Collect unique clerkIds from voiceNote and all replies
+    const clerkIds = [
+      ...new Set([
+        voiceNote.clerkId,
+        ...allReplies.map((note) => note.clerkId),
+      ]),
+    ];
+
+    // Fetch user data in bulk
+    const users = await Promise.all(
+      clerkIds.map(async (clerkId) =>
+        ctx.db
+          .query('users')
+          .withIndex('by_clerk_id', (q) => q.eq('clerkId', clerkId))
+          .first()
+      )
+    );
+    const userMap = new Map(
+      users.filter((user) => user !== null).map((user) => [user.clerkId, user])
+    );
+
+    // Enrich notes with URLs and user data, recursively
+    const enrichNote = async (note: any): Promise<any> => {
+      const user = userMap.get(note.clerkId);
+      const url = await ctx.storage.getUrl(note.storageId as Id<'_storage'>);
+      return {
+        ...note,
+        url,
+        user,
+        replies: await Promise.all(note.replies.map(enrichNote)),
+      };
+    };
+
+    // Return enriched voice note with replies
+    const enrichedNote = await enrichNote({
+      ...voiceNote,
+      replies: topLevelReplies,
+    });
+
+    return enrichedNote;
+  },
+});
+
 export const getAllParentVoiceNotes = query({
   args: {},
   handler: async (ctx) => {
@@ -154,9 +247,8 @@ export const deleteVoiceNote = mutation({
         throw new Error('Unauthorized');
       }
 
-      // making sure the clerkId passed in is the same as the top level voice note being deleted
-      if (args.clerkId !== args.voiceNoteClerkId) {
-        throw new Error('Unauthorized');
+      if (identity.subject !== args.clerkId && args.voiceNoteClerkId) {
+        throw new Error('You are not authorized to delete this voice note');
       }
 
       const getAllReplyIds = async (

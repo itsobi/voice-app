@@ -13,6 +13,14 @@ export function VoiceNotesWrapper({
 }: VoiceNotesWrapperProps) {
   const voiceNotes = usePreloadedQuery(preloadedVoiceNotes);
 
+  if (voiceNotes.length === 0) {
+    return (
+      <div className="flex justify-center items-center h-[calc(100vh-10rem)]">
+        <p>No voice notes</p>
+      </div>
+    );
+  }
+
   return (
     <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
       {voiceNotes.map((voiceNote) =>
@@ -20,7 +28,7 @@ export function VoiceNotesWrapper({
           <VoiceNote key={voiceNote._id} voiceNote={voiceNote} />
         ) : (
           <div key={voiceNote._id}>
-            <div>No audio available</div>
+            <div className="text-red-500 text-sm">No audio available</div>
           </div>
         )
       )}

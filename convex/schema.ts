@@ -23,4 +23,10 @@ export default defineSchema({
     .index('by_clerk_id', ['clerkId'])
     .index('by_topic', ['topic'])
     .index('by_parent_id', ['parentId']),
+  notifications: defineTable({
+    userId: v.string(),
+    senderUserId: v.string(),
+    type: v.union(v.literal('like'), v.literal('reply')),
+    read: v.boolean(),
+  }).index('by_user_id', ['userId']),
 });

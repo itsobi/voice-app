@@ -35,6 +35,7 @@ export function VoiceRecordDialog() {
     close,
     parentId,
     topic: topicFromStore,
+    voiceNoteClerkId,
   } = useVoiceDialogStore();
 
   const { user } = useUser();
@@ -263,6 +264,7 @@ export function VoiceRecordDialog() {
         duration: recordingTime,
         isReply: parentId ? true : false,
         parentId: parentId ? parentId : undefined,
+        voiceNoteClerkId: voiceNoteClerkId,
       });
       if (success) {
         if (pathname === '/') {

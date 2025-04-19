@@ -21,9 +21,14 @@ const headerDetails = {
 export function PageHeader() {
   const pathname = usePathname();
   const details = headerDetails[pathname as keyof typeof headerDetails];
+
+  const hasId = pathname?.split('/').length > 2;
+
   return (
     <div className="flex flex-col mb-6 lg:mb-8">
-      <h1 className="text-2xl font-semibold">{details?.header}</h1>
+      <h1 className="text-2xl font-semibold">
+        {hasId ? 'Voice Note' : details?.header}
+      </h1>
       {details?.description && (
         <p className="text-sm text-muted-foreground">{details?.description}</p>
       )}

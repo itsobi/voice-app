@@ -9,6 +9,7 @@ import { Button } from '../ui/button';
 import { useVoiceDialogStore } from '@/lib/store';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
+import { SignedIn, useUser } from '@clerk/nextjs';
 
 interface ReplyVoiceNoteProps {
   voiceNote: VoiceNote;
@@ -59,22 +60,24 @@ export default function ReplyVoiceNote({
         )}
       </div>
       <div className="mt-4 flex items-center gap-2">
-        <Button
-          onClick={() => {
-            open(voiceNote._id, voiceNote.topic as Topic);
-          }}
-          variant="ghost"
-          className="w-fit flex items-center gap-2 "
-        >
-          <CornerDownRight className="w-4 h-4" /> <span>Reply</span>
-        </Button>
+        <SignedIn>
+          <Button
+            onClick={() => {
+              open(voiceNote._id, voiceNote.topic as Topic, voiceNote.clerkId);
+            }}
+            variant="ghost"
+            className="w-fit flex items-center gap-2 text-xs"
+          >
+            <CornerDownRight className="w-4 h-4" /> <span>Reply</span>
+          </Button>
+        </SignedIn>
         {voiceNote.replies.length > 0 && (
           <Button
             onClick={() => {
               setIsRepliesOpen(!isRepliesOpen);
             }}
             variant="ghost"
-            className="w-fit flex items-center gap-2 "
+            className="w-fit flex items-center gap-2 text-xs"
           >
             <ChevronDown
               className={cn('w-4 h-4', isRepliesOpen && 'rotate-180')}

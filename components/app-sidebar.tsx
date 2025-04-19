@@ -24,7 +24,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
-import { SignedIn, useUser } from '@clerk/nextjs';
+import { SignedIn, SignOutButton, useUser } from '@clerk/nextjs';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
@@ -147,11 +147,10 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-[--radix-popper-anchor-width]">
-                  <DropdownMenuItem className="cursor-pointer">
-                    <span>💪 Upgrade to Pro</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="cursor-pointer">
-                    <span>👋 Sign out</span>
+                  <DropdownMenuItem className="cursor-pointer" asChild>
+                    <SignOutButton>
+                      <span>👋 Sign out</span>
+                    </SignOutButton>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
