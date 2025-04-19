@@ -15,7 +15,7 @@ export function VoiceNotesWrapper({
 
   if (voiceNotes.length === 0) {
     return (
-      <div className="flex justify-center items-center h-[calc(100vh-10rem)]">
+      <div className="flex justify-center items-center mt-20">
         <p>No voice notes</p>
       </div>
     );

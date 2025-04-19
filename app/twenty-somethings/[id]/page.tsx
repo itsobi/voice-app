@@ -23,7 +23,6 @@ export default async function VoiceNotePage({
 }) {
   const { id } = await params;
 
-  // Add try-catch block to handle invalid IDs
   try {
     const preloadedVoiceNote = await preloadQuery(
       api.voiceNotes.getVoiceNoteById,
@@ -31,14 +30,6 @@ export default async function VoiceNotePage({
         voiceNoteId: id as Id<'voiceNotes'>,
       }
     );
-
-    if (!preloadedVoiceNote) {
-      return (
-        <div className="flex justify-center items-center h-[calc(100vh-10rem)]">
-          <p>Voice note not found</p>
-        </div>
-      );
-    }
     return <VoiceNoteWrapper preloadedVoiceNote={preloadedVoiceNote} />;
   } catch (error) {
     return (

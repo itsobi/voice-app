@@ -1,18 +1,35 @@
 'use client';
 
 import { api } from '@/convex/_generated/api';
-import { Preloaded, usePreloadedQuery } from 'convex/react';
+import { Preloaded, useMutation, usePreloadedQuery } from 'convex/react';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { getTimeAgo } from '@/lib/helpers';
 import { Button } from '../ui/button';
-import { HeartIcon, Mic, Trash } from 'lucide-react';
-import { useState } from 'react';
+import { Heart, Mic } from 'lucide-react';
+import { useState, useTransition } from 'react';
 import { useUser } from '@clerk/clerk-react';
 import { DeleteButton } from './delete-button';
+import { Topic } from '@/lib/types';
+import { useVoiceDialogStore } from '@/lib/store';
+import { cn } from '@/lib/utils';
 
 function Reply({ reply }: { reply: any }) {
   const [showNestedReplies, setShowNestedReplies] = useState(false);
   const { user } = useUser();
+  const { open } = useVoiceDialogStore();
+  const [isPending, startTransition] = useTransition();
+
+  const likeVoiceNote = useMutation(api.voiceNotes.likeVoiceNote);
+
+  const handleLikeVoiceNote = async () => {
+    startTransition(async () => {
+      likeVoiceNote({
+        clerkUserId: user?.id ?? '',
+        voiceNoteId: reply._id,
+      });
+    });
+  };
+
   return (
     <div className="flex flex-col">
       <div className="flex gap-x-2">
@@ -33,10 +50,29 @@ function Reply({ reply }: { reply: any }) {
       <audio src={reply.url} controls className="w-full" />
       <div className="flex justify-between gap-x-2 mt-4">
         <div className="flex gap-x-2">
-          <Button variant="outline">
-            <HeartIcon className="w-4 h-4" />
-          </Button>
-          <Button variant="outline">
+          <div className="relative">
+            {reply.likedBy?.length ? (
+              <div className="absolute flex items-center justify-center w-5 h-5 -top-2 -right-1 rounded-full bg-green-500 z-10">
+                <span
+                  className={cn(reply.likedBy.length && 'text-white text-sm')}
+                >
+                  {reply.likedBy.length}
+                </span>
+              </div>
+            ) : null}
+            <Button
+              onClick={handleLikeVoiceNote}
+              variant={'outline'}
+              disabled={!user?.id || isPending}
+            >
+              <Heart />
+            </Button>
+          </div>
+          <Button
+            variant={'outline'}
+            onClick={() => open(reply._id, reply.topic as Topic, reply.clerkId)}
+            disabled={!user?.id || isPending}
+          >
             <Mic className="w-4 h-4" />
           </Button>
         </div>
@@ -80,6 +116,19 @@ export function VoiceNoteWrapper({
 }: VoiceNoteWrapperProps) {
   const voiceNote = usePreloadedQuery(preloadedVoiceNote);
   const { user } = useUser();
+  const { open } = useVoiceDialogStore();
+  const [isPending, startTransition] = useTransition();
+
+  const likeVoiceNote = useMutation(api.voiceNotes.likeVoiceNote);
+
+  const handleLikeVoiceNote = async () => {
+    startTransition(async () => {
+      likeVoiceNote({
+        clerkUserId: user?.id ?? '',
+        voiceNoteId: voiceNote._id,
+      });
+    });
+  };
 
   if (!voiceNote) {
     return (
@@ -112,10 +161,33 @@ export function VoiceNoteWrapper({
 
         <div className="flex justify-between">
           <div className="flex gap-x-2">
-            <Button variant="outline">
-              <HeartIcon className="w-4 h-4" />
-            </Button>
-            <Button variant="outline">
+            <div className="relative">
+              {voiceNote.likedBy?.length ? (
+                <div className="absolute flex items-center justify-center w-5 h-5 -top-2 -right-1 rounded-full bg-green-500 z-10">
+                  <span
+                    className={cn(
+                      voiceNote.likedBy.length && 'text-white text-sm'
+                    )}
+                  >
+                    {voiceNote.likedBy.length}
+                  </span>
+                </div>
+              ) : null}
+              <Button
+                onClick={handleLikeVoiceNote}
+                variant={'outline'}
+                disabled={!user?.id || isPending}
+              >
+                <Heart />
+              </Button>
+            </div>
+            <Button
+              variant={'outline'}
+              onClick={() =>
+                open(voiceNote._id, voiceNote.topic as Topic, voiceNote.clerkId)
+              }
+              disabled={!user?.id}
+            >
               <Mic className="w-4 h-4" />
             </Button>
           </div>
