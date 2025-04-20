@@ -7,16 +7,19 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from './ui/button';
-import { useQuery } from 'convex/react';
+import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { useUser } from '@clerk/clerk-react';
 import { getTimeAgo } from '@/lib/helpers';
+import Link from 'next/link';
 
 export function Notifications() {
   const { user } = useUser();
   const notifications = useQuery(api.notifications.getNotifications, {
     userId: user?.id ?? '',
   });
+  const markAsRead = useMutation(api.notifications.markAsRead);
+  const markAllAsRead = useMutation(api.notifications.markAllAsRead);
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -24,21 +27,47 @@ export function Notifications() {
           <Button variant="outline">
             <span className="text-lg">🔔</span>
           </Button>
-          <span className="absolute -top-1 -right-1 w-4.5 h-4.5 text-xs flex items-center justify-center bg-red-500 rounded-full text-white">
-            {notifications?.length}
-          </span>
+          {notifications?.length ? (
+            <span className="absolute -top-1.5 -right-1.5 w-4.5 h-4.5 text-xs flex items-center justify-center bg-red-500 rounded-full text-white">
+              {notifications?.length}
+            </span>
+          ) : null}
         </div>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
         <div className="flex justify-center items-center">
-          <Button variant="link" className="w-fit text-sm font-normal">
-            Mark all as read
-          </Button>
+          {notifications?.length ? (
+            <Button
+              onClick={() => {
+                if (notifications.length) {
+                  markAllAsRead({
+                    notificationIds: notifications.map(
+                      (notification) => notification._id
+                    ),
+                  });
+                }
+              }}
+              variant="link"
+              className="w-fit text-sm font-normal"
+            >
+              Mark all as read
+            </Button>
+          ) : (
+            <p className="text-sm text-muted-foreground">No notifications</p>
+          )}
         </div>
 
         {notifications?.map((notification) => (
           <DropdownMenuItem key={notification._id}>
-            <div className="flex flex-col gap-2">
+            <Link
+              href={`/${notification.topic}/${notification.voiceNoteId}`}
+              onClick={() => {
+                if (!notification.read) {
+                  markAsRead({ notificationId: notification._id });
+                }
+              }}
+              className="flex flex-col gap-y-2"
+            >
               <div className="flex items-center justify-between">
                 <p className="font-semibold">
                   {notification.type === 'reply' ? 'New Reply' : 'New Like'}
@@ -53,7 +82,7 @@ export function Notifications() {
               <p className="text-xs text-muted-foreground">
                 {getTimeAgo(notification._creationTime)}
               </p>
-            </div>
+            </Link>
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>

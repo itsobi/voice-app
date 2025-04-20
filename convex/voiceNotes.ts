@@ -35,7 +35,7 @@ export const sendVoiceNote = mutation({
     }
 
     try {
-      await ctx.db.insert('voiceNotes', {
+      const voiceNoteId = await ctx.db.insert('voiceNotes', {
         clerkId: args.clerkId,
         storageId: args.storageId,
         topic: args.topic,
@@ -43,13 +43,17 @@ export const sendVoiceNote = mutation({
         isReply: args.isReply,
         parentId: args.parentId,
       });
+
       if (args.isReply && args.voiceNoteClerkId) {
         await ctx.runMutation(api.notifications.createNotification, {
           userId: args.voiceNoteClerkId,
           senderUserId: args.clerkId,
+          voiceNoteId: voiceNoteId,
+          topic: args.topic,
           type: 'reply',
         });
       }
+
       return { success: true, message: 'Voice note sent successfully' };
     } catch (e) {
       console.error(e);

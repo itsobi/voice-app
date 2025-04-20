@@ -5,7 +5,9 @@ export const createNotification = mutation({
   args: {
     userId: v.string(),
     senderUserId: v.string(),
+    voiceNoteId: v.id('voiceNotes'),
     type: v.union(v.literal('like'), v.literal('reply')),
+    topic: v.string(),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -20,7 +22,9 @@ export const createNotification = mutation({
     await ctx.db.insert('notifications', {
       userId: args.userId,
       senderUserId: args.senderUserId,
+      voiceNoteId: args.voiceNoteId,
       type: args.type,
+      topic: args.topic,
       read: false,
     });
   },
@@ -61,5 +65,29 @@ export const getNotifications = query({
     }));
 
     return enrichedNotifications;
+  },
+});
+
+export const markAsRead = mutation({
+  args: {
+    notificationId: v.id('notifications'),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.notificationId, {
+      read: true,
+    });
+  },
+});
+
+export const markAllAsRead = mutation({
+  args: {
+    notificationIds: v.array(v.id('notifications')),
+  },
+  handler: async (ctx, args) => {
+    for (const notificationId of args.notificationIds) {
+      await ctx.db.patch(notificationId, {
+        read: true,
+      });
+    }
   },
 });

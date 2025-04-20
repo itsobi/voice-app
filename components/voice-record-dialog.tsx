@@ -242,6 +242,8 @@ export function VoiceRecordDialog() {
   };
 
   const handleVoiceNoteUpload = async () => {
+    if (!parentId) {
+    }
     startTransition(async () => {
       if (!user || (!topicFromStore && !topic)) {
         toast.error('Make sure you are signed in and a topic is selected');
