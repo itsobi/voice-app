@@ -4,8 +4,8 @@ import { usePathname } from 'next/navigation';
 
 const headerDetails = {
   '/': {
-    header: '🏠 Home',
-    description: undefined,
+    header: '🏠 Welcome to Talk-It',
+    description: `Words on a screen won't tell you the whole story. Take a second, listen, understand, and respond to others across the world. You'll be surprised to what you learn.`,
   },
   '/twenty-somethings': {
     header: '👨‍🎓 Twenty-somethings',
@@ -15,7 +15,17 @@ const headerDetails = {
   '/technology': {
     header: '💻 Technology',
     description:
-      'We are in the golden age of technology. No matter the your age, job description, etc. Join in on the fun!',
+      'We are in the golden age of technology. Join in on the conversation!',
+  },
+  '/sports': {
+    header: '🏃‍♂️ Sports',
+    description:
+      'Can never go wrong with sports! Interact with other sport fans across the world',
+  },
+  '/politics': {
+    header: '🗳️ Politics',
+    description:
+      'Different viewpoints and perspectives from different cultures. Join in on the conversation!',
   },
 } as const;
 export function PageHeader() {

@@ -34,7 +34,7 @@ export function Notifications() {
           ) : null}
         </div>
       </DropdownMenuTrigger>
-      <DropdownMenuContent>
+      <DropdownMenuContent className="max-h-[300px] overflow-y-auto">
         <div className="flex justify-center items-center">
           {notifications?.length ? (
             <Button
