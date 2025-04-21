@@ -41,12 +41,12 @@ const items = [
   },
   {
     title: 'Sports',
-    url: '#',
+    url: '/sports',
     emoji: '🏃‍♂️',
   },
   {
     title: 'Politics',
-    url: '#',
+    url: '/politics',
     emoji: '🗳️',
   },
 ];
