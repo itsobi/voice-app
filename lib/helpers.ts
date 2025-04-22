@@ -2,6 +2,10 @@ export function getTimeAgo(creationTime: number) {
   const now = Date.now();
   const diffMs = now - creationTime;
 
+  if (diffMs <= 0) {
+    return 'just now';
+  }
+
   const seconds = Math.floor(diffMs / 1000);
   const minutes = Math.floor(seconds / 60);
   const hours = Math.floor(minutes / 60);

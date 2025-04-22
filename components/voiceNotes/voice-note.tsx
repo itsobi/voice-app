@@ -66,8 +66,10 @@ export function VoiceNote({ voiceNote }: VoiceNoteProps) {
   const handleLikeVoiceNote = async () => {
     startTransition(async () => {
       likeVoiceNote({
-        clerkUserId: user?.id ?? '',
         voiceNoteId: voiceNote._id,
+        likingClerkId: user?.id ?? '',
+        voiceNoteClerkId: voiceNote.clerkId,
+        topic: voiceNote.topic,
       });
     });
   };

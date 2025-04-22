@@ -3,8 +3,8 @@ import { mutation, query } from './_generated/server';
 
 export const createNotification = mutation({
   args: {
-    userId: v.string(),
-    senderUserId: v.string(),
+    recipientClerkId: v.string(),
+    senderClerkId: v.string(),
     voiceNoteId: v.id('voiceNotes'),
     type: v.union(v.literal('like'), v.literal('reply')),
     topic: v.string(),
@@ -15,13 +15,13 @@ export const createNotification = mutation({
       throw new Error('Unauthorized');
     }
 
-    if (args.userId === args.senderUserId) {
+    if (args.recipientClerkId === args.senderClerkId) {
       return;
     }
 
     await ctx.db.insert('notifications', {
-      userId: args.userId,
-      senderUserId: args.senderUserId,
+      recipientClerkId: args.recipientClerkId,
+      senderClerkId: args.senderClerkId,
       voiceNoteId: args.voiceNoteId,
       type: args.type,
       topic: args.topic,
@@ -32,19 +32,21 @@ export const createNotification = mutation({
 
 export const getNotifications = query({
   args: {
-    userId: v.string(),
+    recipientClerkId: v.string(),
   },
   handler: async (ctx, args) => {
     const notifications = await ctx.db
       .query('notifications')
-      .withIndex('by_user_id', (q) => q.eq('userId', args.userId))
+      .withIndex('by_recipient_clerk_id', (q) =>
+        q.eq('recipientClerkId', args.recipientClerkId)
+      )
       .filter((q) => q.eq(q.field('read'), false))
       .order('desc')
       .collect();
 
     const clerkIds = [
       ...new Set(
-        notifications.map((notification) => notification.senderUserId)
+        notifications.map((notification) => notification.senderClerkId)
       ),
     ];
 
@@ -61,7 +63,7 @@ export const getNotifications = query({
 
     const enrichedNotifications = notifications.map((notification) => ({
       ...notification,
-      sender: userMap.get(notification.senderUserId),
+      sender: userMap.get(notification.senderClerkId),
     }));
 
     return enrichedNotifications;

@@ -46,8 +46,8 @@ export const sendVoiceNote = mutation({
 
       if (args.isReply && args.voiceNoteClerkId) {
         await ctx.runMutation(api.notifications.createNotification, {
-          userId: args.voiceNoteClerkId,
-          senderUserId: args.clerkId,
+          recipientClerkId: args.voiceNoteClerkId,
+          senderClerkId: args.clerkId,
           voiceNoteId: voiceNoteId,
           topic: args.topic,
           type: 'reply',
@@ -310,7 +310,9 @@ export const deleteVoiceNote = mutation({
 export const likeVoiceNote = mutation({
   args: {
     voiceNoteId: v.id('voiceNotes'),
-    clerkUserId: v.string(),
+    likingClerkId: v.string(),
+    voiceNoteClerkId: v.string(),
+    topic: v.string(),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -323,13 +325,21 @@ export const likeVoiceNote = mutation({
     const likedBy = voiceNote?.likedBy ?? [];
     const likedBySet = new Set(likedBy);
 
-    if (likedBySet?.has(args.clerkUserId)) {
+    if (likedBySet?.has(args.likingClerkId)) {
       await ctx.db.patch(args.voiceNoteId, {
-        likedBy: likedBy.filter((id) => id !== args.clerkUserId),
+        likedBy: likedBy.filter((id) => id !== args.likingClerkId),
       });
     } else {
       await ctx.db.patch(args.voiceNoteId, {
-        likedBy: [...likedBy, args.clerkUserId],
+        likedBy: [...likedBy, args.likingClerkId],
+      });
+
+      await ctx.runMutation(api.notifications.createNotification, {
+        recipientClerkId: args.voiceNoteClerkId,
+        senderClerkId: args.likingClerkId,
+        voiceNoteId: args.voiceNoteId,
+        topic: args.topic,
+        type: 'like',
       });
     }
   },

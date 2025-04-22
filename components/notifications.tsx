@@ -16,7 +16,7 @@ import Link from 'next/link';
 export function Notifications() {
   const { user } = useUser();
   const notifications = useQuery(api.notifications.getNotifications, {
-    userId: user?.id ?? '',
+    recipientClerkId: user?.id ?? '',
   });
   const markAsRead = useMutation(api.notifications.markAsRead);
   const markAllAsRead = useMutation(api.notifications.markAllAsRead);
@@ -66,7 +66,7 @@ export function Notifications() {
                   markAsRead({ notificationId: notification._id });
                 }
               }}
-              className="flex flex-col gap-y-2"
+              className="flex flex-col gap-y-2 w-full"
             >
               <div className="flex items-center justify-between">
                 <p className="font-semibold">
@@ -77,7 +77,9 @@ export function Notifications() {
                 )}
               </div>
               <p className="text-sm text-muted-foreground">
-                @{notification.sender?.username} replied to you!
+                {notification.type === 'reply'
+                  ? `@${notification.sender?.username} replied to you!`
+                  : `@${notification.sender?.username} liked your voice note!`}
               </p>
               <p className="text-xs text-muted-foreground">
                 {getTimeAgo(notification._creationTime)}

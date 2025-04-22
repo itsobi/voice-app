@@ -6,11 +6,18 @@ import { SidebarTrigger } from './ui/sidebar';
 import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/nextjs';
 import { toast } from 'sonner';
 import { Notifications } from './notifications';
+import Link from 'next/link';
+
 export function Header() {
   const { open } = useVoiceDialogStore();
   return (
     <div className="flex items-center justify-between px-4 py-2.5">
-      <SidebarTrigger />
+      <div className="flex items-center">
+        <SidebarTrigger className="lg:hidden" />
+        <Link href="/" className="hidden lg:inline-block">
+          <h1 className="text-2xl">Talk-It</h1>
+        </Link>
+      </div>
 
       <div className="flex items-center gap-4">
         <SignedOut>

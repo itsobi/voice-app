@@ -24,8 +24,10 @@ function Reply({ reply }: { reply: any }) {
   const handleLikeVoiceNote = async () => {
     startTransition(async () => {
       likeVoiceNote({
-        clerkUserId: user?.id ?? '',
+        likingClerkId: user?.id ?? '',
+        voiceNoteClerkId: reply.clerkId,
         voiceNoteId: reply._id,
+        topic: reply.topic,
       });
     });
   };
@@ -124,8 +126,10 @@ export function VoiceNoteWrapper({
   const handleLikeVoiceNote = async () => {
     startTransition(async () => {
       likeVoiceNote({
-        clerkUserId: user?.id ?? '',
+        likingClerkId: user?.id ?? '',
+        voiceNoteClerkId: voiceNote.clerkId,
         voiceNoteId: voiceNote._id,
+        topic: voiceNote.topic,
       });
     });
   };

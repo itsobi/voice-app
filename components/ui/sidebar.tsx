@@ -273,7 +273,7 @@ function SidebarTrigger({
       }}
       {...props}
     >
-      {isMobile && <span className="text-xl">👉</span>}
+      <span className="text-xl">👉</span>
       <span className="sr-only">Toggle Sidebar</span>
     </Button>
   );

@@ -7,6 +7,14 @@ export default async function Home() {
     api.voiceNotes.getAllParentVoiceNotes
   );
 
+  if (!preloadedVoiceNotesCount) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen">
+        <h1 className="text-2xl font-bold">No voice notes found</h1>
+      </div>
+    );
+  }
+
   return (
     <TopicsCardWrapper preloadedVoiceNotesCount={preloadedVoiceNotesCount} />
   );

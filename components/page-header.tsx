@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation';
 
 const headerDetails = {
   '/': {
-    header: '🏠 Welcome to Talk-It',
+    header: '🏠 Welcome',
     description: `Words on a screen won't tell you the whole story. Take a second, listen, understand, and respond to others across the world. You'll be surprised to what you learn.`,
   },
   '/twenty-somethings': {

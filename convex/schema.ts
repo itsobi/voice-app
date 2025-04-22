@@ -24,11 +24,11 @@ export default defineSchema({
     .index('by_topic', ['topic'])
     .index('by_parent_id', ['parentId']),
   notifications: defineTable({
-    userId: v.string(),
-    senderUserId: v.string(),
+    recipientClerkId: v.string(),
+    senderClerkId: v.string(),
     voiceNoteId: v.id('voiceNotes'),
     topic: v.string(),
     type: v.union(v.literal('like'), v.literal('reply')),
     read: v.boolean(),
-  }).index('by_user_id', ['userId']),
+  }).index('by_recipient_clerk_id', ['recipientClerkId']),
 });
