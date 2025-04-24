@@ -27,6 +27,7 @@ import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { toast } from 'sonner';
 
 export function Checkmark() {
   return (
@@ -65,12 +66,16 @@ export function VoiceNote({ voiceNote }: VoiceNoteProps) {
 
   const handleLikeVoiceNote = async () => {
     startTransition(async () => {
-      likeVoiceNote({
+      const response = await likeVoiceNote({
         voiceNoteId: voiceNote._id,
         likingClerkId: user?.id ?? '',
         voiceNoteClerkId: voiceNote.clerkId,
         topic: voiceNote.topic,
       });
+
+      if (response && !response.success) {
+        toast.error(response.message);
+      }
     });
   };
 

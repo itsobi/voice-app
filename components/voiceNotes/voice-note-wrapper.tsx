@@ -12,6 +12,7 @@ import { DeleteButton } from './delete-button';
 import { Topic } from '@/lib/types';
 import { useVoiceDialogStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 function Reply({ reply }: { reply: any }) {
   const [showNestedReplies, setShowNestedReplies] = useState(false);
@@ -23,12 +24,16 @@ function Reply({ reply }: { reply: any }) {
 
   const handleLikeVoiceNote = async () => {
     startTransition(async () => {
-      likeVoiceNote({
+      const response = await likeVoiceNote({
         likingClerkId: user?.id ?? '',
         voiceNoteClerkId: reply.clerkId,
         voiceNoteId: reply._id,
         topic: reply.topic,
       });
+
+      if (response && !response.success) {
+        toast.error(response.message);
+      }
     });
   };
 
@@ -125,12 +130,16 @@ export function VoiceNoteWrapper({
 
   const handleLikeVoiceNote = async () => {
     startTransition(async () => {
-      likeVoiceNote({
+      const response = await likeVoiceNote({
         likingClerkId: user?.id ?? '',
         voiceNoteClerkId: voiceNote.clerkId,
         voiceNoteId: voiceNote._id,
         topic: voiceNote.topic,
       });
+
+      if (response && !response.success) {
+        toast.error(response.message);
+      }
     });
   };
 

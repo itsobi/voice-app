@@ -3,6 +3,7 @@ import { mutation, query } from './_generated/server';
 import { TopicEnum } from '@/lib/types';
 import { Id } from './_generated/dataModel';
 import { api } from './_generated/api';
+import { rateLimiter } from './rateLimiter';
 
 export const generateUploadUrl = mutation({
   handler: async (ctx) => {
@@ -318,6 +319,17 @@ export const likeVoiceNote = mutation({
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {
       throw new Error('Unauthorized');
+    }
+
+    const { ok } = await rateLimiter.limit(ctx, 'likePost', {
+      key: identity.subject,
+    });
+
+    if (!ok) {
+      return {
+        success: false,
+        message: 'Rate limit exceeded',
+      };
     }
 
     const voiceNote = await ctx.db.get(args.voiceNoteId);

@@ -1,6 +1,5 @@
 ## DON'T FORGET
 
-- [ ] Link notifications to voice note
 - [ ] Rate limits
 - [ ] Webhook when user updates profile
 
